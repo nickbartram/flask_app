@@ -16,10 +16,10 @@ def create_app():
     database_url = os.environ.get('DATABASE_URL')
     if not database_url:
         # Local development fallback
-        from postgres import postgres_user, postgres_pass
+        from postgres import postgres_user, postgres_pass, postgres_host
         database_url = (
             f"postgresql://{postgres_user}:{postgres_pass}"
-            f"@climate-db.croamw4iqxpi.us-east-2.rds.amazonaws.com:5432/climate_db"
+            f"@{postgres_host}/climate_db"
         )
     
     # Heroku uses postgres:// but SQLAlchemy needs postgresql://
