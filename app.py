@@ -56,7 +56,7 @@ def create_app():
     )
 
     # Maximum limits to prevent abuse
-    MAX_LIMIT = 100
+    MAX_LIMIT = 250
     MAX_OFFSET = 10000
 
     # Define these OUTSIDE the app_context so routes can access them
