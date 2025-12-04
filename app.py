@@ -1,7 +1,10 @@
 import os
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import MetaData
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_caching import Cache
+from sqlalchemy import MetaData, text
 from datetime import datetime
 
 db = SQLAlchemy()
@@ -25,9 +28,36 @@ def create_app():
     
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_ECHO'] = False  # Set to False for production
+    app.config['SQLALCHEMY_ECHO'] = False
+    
+    # Query timeout configuration (in seconds)
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'connect_args': {
+            'options': '-c statement_timeout=10000'  # 10 second timeout
+        },
+        'pool_pre_ping': True,  # Verify connections before using
+        'pool_recycle': 3600,   # Recycle connections after 1 hour
+    }
+
+    # Cache configuration (simple in-memory cache)
+    app.config['CACHE_TYPE'] = 'SimpleCache'
+    app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # 5 minutes
 
     db.init_app(app)
+    cache = Cache(app)
+
+    # Rate limiter configuration
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://",
+        strategy="fixed-window"
+    )
+
+    # Maximum limits to prevent abuse
+    MAX_LIMIT = 100
+    MAX_OFFSET = 10000
 
     # Define these OUTSIDE the app_context so routes can access them
     metadata = MetaData()
@@ -42,8 +72,10 @@ def create_app():
         except Exception as e:
             print(f"Error reflecting tables: {e}")
 
-    # --- Home route ---
+    # --- Home route (cached, more permissive limit) ---
     @app.route("/")
+    @limiter.limit("100 per hour")
+    @cache.cached(timeout=600)  # Cache for 10 minutes
     def home():
         if not table_names:
             return "<h1>No tables found!</h1><p>Check your database connection and credentials.</p>"
@@ -66,10 +98,13 @@ def create_app():
             )
         html += "</ul>"
         html += "<p>Use <code>/help/&lt;table&gt;</code> for column types and query instructions.</p>"
+        html += "<p><small>Rate limit: 50 requests/hour, 200 requests/day per IP</small></p>"
         return html
 
-    # --- Help route ---
+    # --- Help route (cached) ---
     @app.route("/help/<table_name>")
+    @limiter.limit("100 per hour")
+    @cache.cached(timeout=600, query_string=True)
     def table_help(table_name):
         full_name = f"public.{table_name}" if f"public.{table_name}" in metadata.tables else table_name
         if full_name not in metadata.tables:
@@ -83,16 +118,18 @@ def create_app():
             "usage": {
                 "base_url": f"/{table_name}",
                 "parameters": {
-                    "limit": "Number of results (default: 10)",
-                    "offset": "Skip N results (for pagination)",
+                    "limit": f"Number of results (default: 10, max: {MAX_LIMIT})",
+                    "offset": f"Skip N results (max: {MAX_OFFSET})",
                     "<column_name>": "Filter by column value"
                 },
-                "example": f"/{table_name}?limit=5&offset=0"
+                "example": f"/{table_name}?limit=5&offset=0",
+                "rate_limits": "50 requests/hour, 200 requests/day per IP"
             }
         })
 
     # --- Function factory for table routes ---
     def make_table_route(table_name, table_obj):
+        @limiter.limit("30 per minute")  # Stricter limit for data queries
         def table_api():
             try:
                 valid_cols = {col.name: col for col in table_obj.columns}
@@ -118,9 +155,24 @@ def create_app():
 
                     filters[key] = converted
 
-                limit = int(request.args.get("limit", 10))
-                offset = int(request.args.get("offset", 0))
+                # Enforce maximum limits
+                limit = min(int(request.args.get("limit", 10)), MAX_LIMIT)
+                offset = min(int(request.args.get("offset", 0)), MAX_OFFSET)
 
+                if offset > MAX_OFFSET:
+                    return jsonify({
+                        "error": f"Offset cannot exceed {MAX_OFFSET}"
+                    }), 400
+
+                # Build cache key from query parameters
+                cache_key = f"{table_name}:{limit}:{offset}:{sorted(filters.items())}"
+                
+                # Try to get from cache
+                cached_result = cache.get(cache_key)
+                if cached_result:
+                    return jsonify(cached_result)
+
+                # Execute query with timeout protection
                 query = table_obj.select().limit(limit).offset(offset)
                 for col_name, val in filters.items():
                     query = query.where(table_obj.c[col_name] == val)
@@ -129,17 +181,28 @@ def create_app():
                 rows = result.fetchall()
                 data = [dict(row._mapping) for row in rows]
 
-                return jsonify({
+                response_data = {
                     "table": table_name,
                     "count": len(data),
                     "limit": limit,
                     "offset": offset,
                     "filters": filters,
-                    "results": data
-                })
+                    "results": data,
+                    "next_offset": offset + limit if len(data) == limit else None
+                }
+
+                # Cache the result
+                cache.set(cache_key, response_data, timeout=300)
+
+                return jsonify(response_data)
 
             except Exception as e:
-                return jsonify({"error": str(e)}), 500
+                error_msg = str(e)
+                if "statement timeout" in error_msg.lower():
+                    return jsonify({
+                        "error": "Query timeout - please add more specific filters"
+                    }), 408
+                return jsonify({"error": error_msg}), 500
 
         table_api.__name__ = f"table_api_{table_name}"
         return table_api
@@ -149,6 +212,14 @@ def create_app():
         full_name = f"public.{table_name}" if f"public.{table_name}" in metadata.tables else table_name
         table_obj = metadata.tables[full_name]
         app.add_url_rule(f"/{table_name}", view_func=make_table_route(table_name, table_obj))
+
+    # --- Rate limit error handler ---
+    @app.errorhandler(429)
+    def ratelimit_handler(e):
+        return jsonify({
+            "error": "Rate limit exceeded",
+            "message": str(e.description)
+        }), 429
 
     return app
 
