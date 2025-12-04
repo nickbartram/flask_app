@@ -56,7 +56,7 @@ def create_app():
     )
 
     # Maximum limits to prevent abuse
-    MAX_LIMIT = 250
+    MAX_LIMIT = 100
     MAX_OFFSET = 10000
 
     # Define these OUTSIDE the app_context so routes can access them
@@ -80,25 +80,88 @@ def create_app():
         if not table_names:
             return "<h1>No tables found!</h1><p>Check your database connection and credentials.</p>"
 
-        html = "<h1>Climate Database API</h1>"
-        html += "<p>Welcome to the Climate Database API. Available tables:</p><ul>"
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Climate Database API</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    max-width: 900px;
+                    margin: 50px auto;
+                    padding: 20px;
+                    background-color: #f5f5f5;
+                }
+                h1 {
+                    color: #2c3e50;
+                    border-bottom: 3px solid #3498db;
+                    padding-bottom: 10px;
+                }
+                ul {
+                    list-style-type: none;
+                    padding: 0;
+                }
+                li {
+                    background: white;
+                    margin: 10px 0;
+                    padding: 15px;
+                    border-radius: 5px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                a {
+                    color: #3498db;
+                    text-decoration: none;
+                }
+                a:hover {
+                    text-decoration: underline;
+                }
+                code {
+                    background-color: #ecf0f1;
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                    font-family: monospace;
+                }
+                .info {
+                    background-color: #e8f4f8;
+                    padding: 10px;
+                    border-radius: 5px;
+                    margin-top: 20px;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Climate Database API</h1>
+            <p>Welcome to the Climate Database API. Available tables:</p>
+            <ul>
+        """
+        
         for table_name in table_names:
             full_name = f"public.{table_name}" if f"public.{table_name}" in metadata.tables else table_name
             table = metadata.tables[full_name]
             columns = [col.name for col in table.columns]
-            col_list = ", ".join(columns[:5])  # Show first 5 columns
+            col_list = ", ".join(columns[:5])
             if len(columns) > 5:
                 col_list += "..."
             example_query = f"/{table_name}?limit=5"
-            html += (
-                f"<li><a href='/{table_name}'>{table_name}</a> "
-                f"(columns: {col_list}) "
-                f"<a href='{example_query}'>Example</a> | "
-                f"<a href='/help/{table_name}'>Help</a></li>"
-            )
-        html += "</ul>"
-        html += "<p>Use <code>/help/&lt;table&gt;</code> for column types and query instructions.</p>"
-        html += "<p><small>Rate limit: 50 requests/hour, 200 requests/day per IP</small></p>"
+            html += f"""
+                <li>
+                    <strong><a href='/{table_name}'>{table_name}</a></strong>
+                    <br><small>columns: {col_list}</small>
+                    <br><a href='{example_query}'>Example</a> | <a href='/help/{table_name}'>Help</a>
+                </li>
+            """
+        
+        html += """
+            </ul>
+            <div class="info">
+                <p>Use <code>/help/&lt;table&gt;</code> for column types and query instructions.</p>
+                <p><small>Rate limit: 50 requests/hour, 200 requests/day per IP</small></p>
+            </div>
+        </body>
+        </html>
+        """
+        
         return html
 
     # --- Help route (cached) ---
