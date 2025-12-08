@@ -2,8 +2,8 @@
 
 ## Introduction
 
-This project is a Flask-based API for querying climate data stored in the PostgresSQL database hosted on AWS RDS. It provides endpoints to list tables, filter data, and view metadata programatically. While the root URL `/` returns a simple HTML page for browsing tables, the primary functionality is exposed as a JSON API. That means that people can access data from the database from this API, i.e. store data locally and make advanced queries.
-The API is avaible publicly here: [https://climate-api-f42d55500706.herokuapp.com/](https://climate-api-f42d55500706.herokuapp.com/)
+This project is a Flask-based API for querying climate data stored in the PostgreSQL database hosted on AWS RDS. It provides endpoints to list tables, filter data, and view metadata programmatically. While the root URL `/` returns a simple HTML page for browsing tables, the primary functionality is exposed as a JSON API. That means that people can access data from the database via this API, i.e. store data locally and make advanced queries.
+The API is available publicly here: [https://climate-api-f42d55500706.herokuapp.com/](https://climate-api-f42d55500706.herokuapp.com/)
 
 ![1764828677949](image/README/1764828677949.png)
 
@@ -11,22 +11,22 @@ The API is avaible publicly here: [https://climate-api-f42d55500706.herokuapp.co
 
 The data for this project comes from several different sources:
 
-First a very large dataset from Our World in Data (OWID: https://ourworldindata.org/) the shows global CO₂ emissions since the year 1750. This contains data from every country in the world, it's a large CSV file that was downloaded directly from the site (full citation in [References](#references)).
+First a very large dataset from Our World in Data (OWID: https://ourworldindata.org/) that shows global CO₂ emissions since the year 1750. This contains data from every country in the world, it's a large CSV file that was downloaded directly from the OWID site (full citation in [References](#references)).
 
-The next dataset comes from the Food and Agriculture Organization and World Bank (World Bank: https://data.worldbank.org/). This dataset shows the affordability of a healthy diet globally. It shows how many people are able to afford a healthy diet in each country. This was another CSV file downloaded directly from the site (full citation in [References](#references)).
+The next dataset comes from the Food and Agriculture Organization (FAO) and World Bank (World Bank: https://data.worldbank.org/). This dataset shows the affordability of a healthy diet globally. It shows how many people are able to afford a healthy diet in each country. This was another CSV file downloaded directly from the site (full citation in [References](#references)).
 
 The next dataset also comes from the World Bank but also the Climate Change Knowledge Portal (CCKP: https://climateknowledgeportal.worldbank.org/). This CSV was obtained through an API request, looking for a timeseries of annual rainfall from 1908-2024. The specific API request in found in the `main_backup.ipynb` or `CCKP_rainfall_data.ipynb` notebooks of this repo. A full citation come be found in [References](#references).
 
-Finally datasets of crop production of Canada and the United States of America were found at Statistics Canada (Stats Can: https://www.statcan.gc.ca/en/start) and the United States Department of Agriculture Quick Stats (USDA Quick Stats: https://www.nass.usda.gov/Quick_Stats/). These two datasets contains information on historical wheat and corn production that was used for this project. A full citation come be found in [References](#references).
+Finally datasets of crop production of Canada and the United States of America were found at Statistics Canada (Stats Can: https://www.statcan.gc.ca/en/start) and the United States Department of Agriculture Quick Stats (USDA Quick Stats: https://www.nass.usda.gov/Quick_Stats/). These two datasets contain information on historical wheat and corn production; portions of which were used that used for this project. A full citation come be found in [References](#references).
 
-This is the same data used in two other projects for this portfolio. The other projects are avaible here:
+This is the same data used in two other projects for this portfolio. The other projects are available here:
 
 * [https://github.com/nickbartram/climate_agriculture_impact.git](https://github.com/nickbartram/climate_agriculture_impact.git)
 * [https://github.com/nickbartram/tableau_climate.git](https://github.com/nickbartram/tableau_climate.git)
 
 ## Methodology
 
-This project was completed using Flask, python and SQLAlchemy on VSCode. The project benefitted from extensive EDA (exploratory data analysis) and ETL (extract, transform, load) that was done initially in the Streamlit app located [here](https://github.com/nickbartram/climate_agriculture_impact.git). A more thorough breakdown of this process is available in the README for that app. Briefly the data was extracted from real world sources, cleaned, and uploaded to an RDS database. That public database is used in this Flask app.
+This project was completed using Flask, Python and SQLAlchemy on VSCode. The project benefitted from extensive EDA (exploratory data analysis) and ETL (extract, transform, load) done initially in the Streamlit app located [here](https://github.com/nickbartram/climate_agriculture_impact.git). A more thorough breakdown of this process is available in the README for that app. Briefly, the data was extracted from real world sources, cleaned, and uploaded to an PostgreSQL  database hosted on AWS RDS. That public database is used in this Flask app.
 
 First `app.py` needs to load it's dependencies:
 
@@ -46,7 +46,7 @@ The function factory is used to avoid Python's late binding behavior in loops. O
 
 The Heroku CLI was downloaded locally, and used to push changes to that site. It's free for this small project and allows it to be viewed publicly. This was done using the Heroku site, and through Git Bash. It only took signing up for an account, logging in to the account, and creating a Heroku app within the same directory as the Flask app. It functions similarly to Git Hub in this sense, with pushes be very similar.
 
-The entire app is avaible to view in this reposistory, listed as `app.py`.
+The entire app is available to view in this repository, listed as `app.py`.
 
 ## Results
 
@@ -89,7 +89,7 @@ This was the final project completed in this portfolio. I realized that the Flas
 The Flask API provides a simple homepage at `/` where you can explore available tables and their columns.
 
 * Click on a table to see example queries and a sample of the data
-* Each table page alose includes a **Help** link (e.g., `help/<table_name>`) showing the column types, usage
+* Each table page also includes a **Help** link (e.g., `help/<table_name>`) showing the column types, usage
 * You can filter and limit results directly in the URL. For example:
 
   ![1764833713791](image/README/1764833713791.png)
