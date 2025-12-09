@@ -11,11 +11,29 @@ The API is available publicly here: [https://climate-api-f42d55500706.herokuapp.
 
 The data for this project comes from several different sources:
 
+<div>
+    <img src="image/README/1758303745328.png" width="100" style="display:inline-block; margin-right:20px;">
+</div>
+
 First a very large dataset from Our World in Data (OWID: https://ourworldindata.org/) that shows global CO₂ emissions since the year 1750. This contains data from every country in the world, it's a large CSV file that was downloaded directly from the OWID site (full citation in [References](#references)).
+
+<div>
+    <img src="image/README/1758303779027.png" width="200" style="display:inline-block; margin-right:20px;">
+    <img src="image/README/1758303814353.png" width="100" style="display:inline-block;">
+</div>
 
 The next dataset comes from the Food and Agriculture Organization (FAO) and World Bank (World Bank: https://data.worldbank.org/). This dataset shows the affordability of a healthy diet globally. It shows how many people are able to afford a healthy diet in each country. This was another CSV file downloaded directly from the site (full citation in [References](#references)).
 
+<div>
+    <img src="image/README/1758303866928.png" width="150" style="display:inline-block; margin-right:20px;">
+</div>
+
 The next dataset also comes from the World Bank but also the Climate Change Knowledge Portal (CCKP: https://climateknowledgeportal.worldbank.org/). This CSV was obtained through an API request, looking for a timeseries of annual rainfall from 1908-2024. The specific API request in found in the `main_backup.ipynb` or `CCKP_rainfall_data.ipynb` notebooks of this repo. A full citation come be found in [References](#references).
+
+<div>
+    <img src="image/README/1758303977816.png" width="200" style="display:inline-block; margin-right:20px;">
+    <img src="image/README/1758304019752.png" width="100" style="display:inline-block;">
+</div>
 
 Finally datasets of crop production of Canada and the United States of America were found at Statistics Canada (Stats Can: https://www.statcan.gc.ca/en/start) and the United States Department of Agriculture Quick Stats (USDA Quick Stats: https://www.nass.usda.gov/Quick_Stats/). These two datasets contain information on historical wheat and corn production; portions of which were used that used for this project. A full citation come be found in [References](#references).
 
